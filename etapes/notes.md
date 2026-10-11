@@ -1,13 +1,6 @@
 # Prompts principaux
 
-## 2 - Créer une branche dédiée
-
-```text
-git switch -c refactor/company-event
-git branch
-```
-
-## 3 - Explorer le legacy
+## A2 - Explorer le legacy
 
 ```text
 Explore ce projet legacy sans modifier aucun fichier.
@@ -28,9 +21,9 @@ Ne refactore rien.
 Ne modifie aucun autre fichier.
 ```
 
-Cf. /3-explorer pour un exemple de architecture.md
+Cf. /A2-explorer pour un exemple de architecture.md
 
-## 4 - Figer les comportements à préserver
+## A3 - Figer les comportements à préserver
 
 ```text
 À partir de ton analyse du projet, identifie les comportements existants
@@ -50,9 +43,16 @@ Contraintes :
 À la fin, exécute `npm test` et explique brièvement ce que chaque test protège.
 ```
 
-Cf. /4-figer-les-comportements pour un exemple des tests et de captures
+Cf. /A3-figer-les-comportements pour un exemple des tests et de captures
 
-## 5 et 6 - Spécification fonctionnelle
+## B1 - Créer une branche dédiée
+
+```text
+git switch -c refactor/company-event
+git branch
+```
+
+## B2 et B3 - Spécification fonctionnelle
 
 Ce prompt utilise le ticket, le logo, et la charte graphique déjà préparées dans le dossier /HexGL/formation/ pour générer la specification fonctionnelle :
 
@@ -64,37 +64,43 @@ Lis :
 - @docs/architecture.md
 - ainsi que le code concerné.
 
-Le ticket exprime le besoin métier.
+@formation/tickets/company-event.md est notre source de vérité du besoin. 
 La charte et le logo sont des contraintes d'identité visuelle à respecter.
 
 Avant de rédiger la spec :
-- utilise AskUserQuestion uniquement si une ambiguïté nécessite réellement
-  une décision humaine
+- utilise AskUserQuestion uniquement si une ambiguïté nécessite réellement une décision humaine
 - ne redemande pas ce qui est déjà explicite dans les documents
-- ne propose pas encore de solution technique
+- ne détaille pas encore le plan d’implémentation ni les fichiers à modifier
 
 Une fois les points nécessaires clarifiés, génère : work/company-event/spec.md avec :
 - Contexte et objectif
 - Exigences fonctionnelles
 - Comportements attendus
 - Contraintes
+- Décisions de conception déjà imposées
 - Cas limites et gestion des erreurs
 - Hors périmètre
 - Critères d’acceptation
 
-La spécification décrit ce que l’on veut obtenir et pourquoi, sans définir encore la solution technique.
+La spécification décrit ce que l’on veut obtenir et pourquoi.
 
 Ne modifie aucun code.
 ```
 Review : 
 ```text
 Relis @work/company-event/spec.md comme reviewer produit.
-Signale uniquement :- les ambiguïtés restantes- les exigences non vérifiables- les décisions techniques qui se sont glissées dans la spécification- les exigences inventées par rapport aux sources du besoin- les cas limites ou éléments hors périmètre manquants qui pourraient élargir le travail. Ne modifie rien. Classe les remarques par importance.
+Signale uniquement :
+- les ambiguïtés restantes
+- les exigences non vérifiables
+- les détails d’implémentation prématurés qui devraient plutôt apparaître dans plan.md
+- les exigences inventées par rapport aux sources du besoin
+- les cas limites ou éléments hors périmètre manquants qui pourraient élargir le travail.
+Ne modifie rien. Classe les remarques par importance.
 ```
 
-Cf. /5-6-spec pour une exemple de specification fonctionnelle
+Cf. /B2-B3-spec pour une exemple de specification fonctionnelle
 
-## 7 et 8 - Design technique
+## B4 et B5 - plan
 
 ```text
 /plan À partir de @work/company-event/spec.md et de @docs/architecture.md,
@@ -127,27 +133,27 @@ Review :
 
 ```text
 Le plan est validé.
-Enregistre le plan validé dans : work/company-event/design.md
+Enregistre le plan validé dans : work/company-event/plan.md
 Ne l'enrichis pas et ne commence aucune implémentation.
 Ne modifie aucun autre fichier.
 ```
 
-Cf. /7-8-design-technique pour une exemple de design technique
+Cf. /B4-B5-plan pour une exemple de plan.md
 
-## 9 - Build
+## B6 - Build
 
-Cf. /9-build pour les captures d'écran de chaque étape
+Cf. /B6-build pour les captures d'écran de chaque étape
 
 ### ETAPE 1 : 
 
 ```text
-Implémente uniquement l’étape 1 « Fondations + fond sombre »
-du plan d’implémentation de @work/company-event/design.md.
-Respecte exactement le design validé et les contraintes propres à cette étape.
+Implémente uniquement l’étape 1 du plan d’implémentation de @work/company-event/plan.md.
+Respecte exactement le plan validé et les contraintes propres à cette étape.
 Règles :
 - n’anticipe pas les étapes suivantes
 - ne modifie rien hors du périmètre prévu
-- ne touche pas au gameplay ni au JavaScript / CoffeeScript sauf si le design l’exige explicitement
+- si l’implémentation nécessite de s’écarter du plan validé, arrête-toi et explique l’écart avant de poursuivre
+- ne touche pas au gameplay ni au JavaScript / CoffeeScript sauf si le plan l’exige explicitement
 - lance `npm test` après les modifications
 - si un test échoue, corrige la cause sans supprimer ni affaiblir le test
 - arrête-toi après cette étape
@@ -155,94 +161,30 @@ Règles :
 Ne commence pas l’étape suivante.
 ```
 
-### ETAPE 2 : 
+### ETAPES 2 - N : 
 
 ```text
-L’étape 1 est validée.
+L’étape précédente est validée.
 
-Implémente uniquement l’étape 2 « Logo ACME + carte de contraste »
-du plan d’implémentation de @work/company-event/design.md.
+Implémente uniquement l’étape suivante
+du plan d’implémentation de @work/company-event/plan.md.
 
-Respecte exactement le design validé et les contraintes propres à cette étape.
+Respecte exactement le plan validé et les contraintes propres à cette étape.
 
 Règles :
 - n’anticipe pas les étapes suivantes
 - ne modifie rien hors du périmètre prévu
-- ne touche pas au gameplay ni au JavaScript / CoffeeScript sauf si le design l’exige explicitement
+- si l’implémentation nécessite de s’écarter du plan validé, arrête-toi et explique l’écart avant de poursuivre
+- ne touche pas au gameplay ni au JavaScript / CoffeeScript sauf si le plan l’exige explicitement
 - lance `npm test` après les modifications
 - si un test échoue, corrige la cause sans supprimer ni affaiblir le test
 - arrête-toi après cette étape
 - résume les fichiers modifiés, les changements effectués et le résultat des tests
 
-Ne commence pas l’étape suivante.
+Ne commence pas l’étape suivante ni ne fait aucun commit.
 ```
 
-### ETAPE 3 : 
-
-```text
-L’étape 2 est validée.
-
-Implémente uniquement l’étape 3 « Message d’accueil »
-du plan d’implémentation de @work/company-event/design.md.
-
-Respecte exactement le design validé et les contraintes propres à cette étape.
-
-Règles :
-- n’anticipe pas les étapes suivantes
-- ne modifie rien hors du périmètre prévu
-- ne touche pas au gameplay ni au JavaScript / CoffeeScript sauf si le design l’exige explicitement
-- lance `npm test` après les modifications
-- si un test échoue, corrige la cause sans supprimer ni affaiblir le test
-- arrête-toi après cette étape
-- résume les fichiers modifiés, les changements effectués et le résultat des tests
-
-Ne commence pas l’étape suivante.
-```
-
-### ETAPE 4 :
-
-```text
-L’étape 3 est validée.
-
-Implémente uniquement l’étape 4 « Re-skin menu et bouton Start »
-du plan d’implémentation de @work/company-event/design.md.
-
-Respecte exactement le design validé et les contraintes propres à cette étape.
-
-Règles :
-- n’anticipe pas les étapes suivantes
-- ne modifie rien hors du périmètre prévu
-- ne touche pas au gameplay ni au JavaScript / CoffeeScript sauf si le design l’exige explicitement
-- lance `npm test` après les modifications
-- si un test échoue, corrige la cause sans supprimer ni affaiblir le test
-- arrête-toi après cette étape
-- résume les fichiers modifiés, les changements effectués et le résultat des tests
-
-Ne commence pas l’étape suivante.
-```
-
-### ETAPE 5 : 
-
-```text
-L’étape 4 est validée.
-
-Implémente uniquement l’étape 5 « Media query petits écrans / portrait »
-du plan d’implémentation de @work/company-event/design.md.
-
-Respecte exactement le design validé et les contraintes propres à cette étape.
-
-Règles :
-- ne modifie rien hors du périmètre prévu
-- ne touche pas au gameplay ni au JavaScript / CoffeeScript sauf si le design l’exige explicitement
-- lance `npm test` après les modifications
-- si un test échoue, corrige la cause sans supprimer ni affaiblir le test
-- arrête-toi après cette étape
-- résume les fichiers modifiés, les changements effectués et le résultat des tests
-
-Ne réalise aucun commit.
-```
-
-## 10 - Vérification générale
+## B7 - Vérification finale
 
 ```text
 /simplify Concentre-toi uniquement sur les fichiers modifiés pour ce changement. Simplifie seulement si cela améliore réellement la qualité ou réduit la duplication. Ne change aucun comportement, n'élargis pas le périmètre, ne modernise pas la codebase et ne touche pas au gameplay ni au JavaScript / CoffeeScript. Si aucune simplification utile n'est nécessaire, ne modifie rien.
@@ -260,36 +202,36 @@ Vérifie également qu’aucun changement hors périmètre n’a été introduit
 Ne modifie rien pendant cette vérification.
 ```
 
-## 11 - Capitaliser et nettoyer
+## B8 - Capitaliser et documenter
 
 
 ```text
-Analyse @work/company-event/spec.md, @work/company-event/design.md et le diff actuel.
-Pour ce TP, spec.md et design.md sont des artefacts de travail temporaires qui seront supprimés après capitalisation.
-Identifie uniquement les informations qui doivent rester vraies après livraison :
-- changement d’architecture
-- nouvelles commandes
-- contraintes ou pièges importants
-- décisions techniques durables
-Propose les mises à jour nécessaires de @docs/architecture.md
-afin que ces informations survivent à la suppression des artefacts temporaires.
-Ne supprime rien et ne modifie rien sans ma validation.
+Analyse @work/company-event/spec.md, @work/company-event/plan.md et le diff actuel. 
+Identifie les informations durables qui doivent être répercutées dans docs/architecture.md : changements d’architecture, nouvelles commandes, contraintes, pièges importants et décisions techniques durables.
+Propose uniquement les mises à jour nécessaires.
+Ne supprime ni spec.md ni plan.md.
+
 ```
 
 puis :
 
 ```text
-Applique les mises à jour validées à @docs/architecture.md. Puis supprime les artefacts temporaires : @work/company-event/spec.md et @work/company-event/design.md. Supprime ensuite le dossier work/company-event s’il est vide. Supprime également de la doc toute référence devenue invalide vers ces fichiers. Ne touche à aucun autre fichier.
+Applique les mises à jour validées à @docs/architecture.md.
+Supprime uniquement les fichiers temporaires devenus inutiles.
+Conserve work/company-event/spec.md et work/company-event/plan.md
 ```
 
-Cf. /11-capitaliser-et-nettoyer pour la doc mise à jour.
+Cf. /B8-capitaliser-et-documenter pour la doc mise à jour.
 
-## 12 - Commit
+## B9 - Commit
 
 ```text
-Analyse le diff actuel avant commit, propose un message adapté puis crée le commit local. Ne push rien. En cas de changement inattendu, arrête-toi avant le commit.
+Analyse le diff actuel, y compris spec.md, plan.md, code, tests et documentation.
+Si tu détectes un changement inattendu ou hors périmètre, arrête-toi.
+Sinon, propose un message adapté puis crée le commit local.
+Ne push rien.
 ```
 
-## 13 - Automatisations Git
+## B10 - Automatisations Git
 
-Cf. /13-automatisations-git pour les fichiers du chapitre sur Git, GitHub, et CI / CD
+Cf. /B10-automatisations-git pour les fichiers du chapitre sur Git, GitHub, et CI / CD
