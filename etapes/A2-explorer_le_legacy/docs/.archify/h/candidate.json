@@ -4,7 +4,7 @@
   "meta": {
     "title": "Architecture HexGL",
     "subtitle": "Vue d'ensemble : jeu client-side, sans backend",
-    "output": ".archify/architecture-hexgl-overview-20261008-153810/hexgl-architecture.html",
+    "output": ".archify/h/architecture.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/wanegain3/cc-tp-hexgl-BEAUGRAND.git",

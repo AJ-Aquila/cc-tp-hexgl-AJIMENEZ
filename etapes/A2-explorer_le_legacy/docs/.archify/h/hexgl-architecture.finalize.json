@@ -7,12 +7,12 @@
   "quality": "showcase",
   "startedAt": "2026-10-08T13:52:53.785Z",
   "specification": {
-    "path": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\candidate.json",
+    "path": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\candidate.json",
     "sha256": "12e1c730c918361038a71b9cfc573452179ee0053ef883b3886858d2d4512beb",
     "bytes": 7187
   },
   "artifact": {
-    "path": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.html",
+    "path": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\architecture.html",
     "sha256": "d26393388d32ea7806dccfcffccd7eb5c55baefc27afc542141cb1f3fffc07ab",
     "bytes": 777639
   },
@@ -27,8 +27,8 @@
         "C:\\Users\\Alex\\.agents\\skills\\archify\\bin\\archify.mjs",
         "deliver",
         "architecture",
-        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\candidate.json",
-        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.html",
+        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\candidate.json",
+        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\architecture.html",
         "--quality",
         "showcase",
         "--repo-root",
@@ -62,8 +62,8 @@
         "C:\\Users\\Alex\\.agents\\skills\\archify\\bin\\archify.mjs",
         "deliver",
         "architecture",
-        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\candidate.json",
-        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.html",
+        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\candidate.json",
+        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\architecture.html",
         "--quality",
         "showcase",
         "--repo-root",
@@ -76,8 +76,8 @@
         "ok": true,
         "command": "deliver",
         "type": "architecture",
-        "input": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\candidate.json",
-        "output": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.html",
+        "input": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\candidate.json",
+        "output": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\architecture.html",
         "specification": {
           "sha256": "12e1c730c918361038a71b9cfc573452179ee0053ef883b3886858d2d4512beb",
           "bytes": 7187
@@ -121,12 +121,12 @@
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\Alex\\.agents\\skills\\archify\\bin\\archify.mjs",
         "check",
-        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.html",
+        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\architecture.html",
         "--require-provenance"
       ],
       "receipt": {
         "ok": true,
-        "file": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.html",
+        "file": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\architecture.html",
         "artifact": {
           "sha256": "d26393388d32ea7806dccfcffccd7eb5c55baefc27afc542141cb1f3fffc07ab",
           "bytes": 777639
@@ -263,7 +263,7 @@
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\Alex\\.agents\\skills\\archify\\bin\\archify.mjs",
         "browser-check",
-        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.html",
+        "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\architecture.html",
         "--json",
         "--require-provenance"
       ],
@@ -278,7 +278,7 @@
         "provenance": "current",
         "deliveryReceiptId": "ecb2f29e-b632-45ff-8702-d32c47a832af",
         "artifact": {
-          "path": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.html",
+          "path": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\architecture.html",
           "sha256": "d26393388d32ea7806dccfcffccd7eb5c55baefc27afc542141cb1f3fffc07ab",
           "bytes": 777639
         },
@@ -969,9 +969,9 @@
   },
   "diagnostics": [],
   "evidence": {
-    "receipt": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.finalize.json",
-    "summaryReceipt": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.finalize-summary.json",
-    "browserCheckReceipt": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\architecture-hexgl-overview-20261008-153810\\hexgl-architecture.browser-check.json"
+    "receipt": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\hexgl-architecture.finalize.json",
+    "summaryReceipt": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\hexgl-architecture.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\hexgl-architecture.browser-check.json"
   },
   "visualReview": "not-requested",
   "finishedAt": "2026-10-08T13:53:03.616Z",

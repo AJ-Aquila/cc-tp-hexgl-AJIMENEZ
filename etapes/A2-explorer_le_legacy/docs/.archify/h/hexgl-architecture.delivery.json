@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "ecb2f29e-b632-45ff-8702-d32c47a832af",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\candidate.json",
+  "output": "C:\\Users\\Alex\\Documents\\saved_pro\\formations\\claude_code\\divers\\code_old_fake_formations\\1-fausse-formation\\cc-tp-hexgl-beaugrand\\.archify\\h\\architecture.html",
+  "specification": {
+    "sha256": "12e1c730c918361038a71b9cfc573452179ee0053ef883b3886858d2d4512beb",
+    "bytes": 7187
+  },
+  "artifact": {
+    "sha256": "d26393388d32ea7806dccfcffccd7eb5c55baefc27afc542141cb1f3fffc07ab",
+    "bytes": 777639
+  }
+}
