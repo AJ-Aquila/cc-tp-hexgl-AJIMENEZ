@@ -1,0 +1,13 @@
+name: Tests navigateur HexGL
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tester HexGL dans Chrome ou Edge
+        shell: cmd
+        run: call HexGL\formation\tests\ci-chrome.bat
