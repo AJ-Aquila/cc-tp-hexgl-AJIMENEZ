@@ -24,12 +24,6 @@ Les scripts recherchent Chrome, Chromium ou Edge selon le système et exécutent
 
 Le rapport précédent est supprimé au lancement et n'est conservé que si une erreur survient.
 
-## Ajouter la CI
-
-Placer `.github/workflows/hexgl-browser-tests.yml` à la racine du dépôt Git.
-
-GitHub Actions exécute les mêmes tests sur une machine Windows (`windows-latest`), via `ci-chrome.bat`.
-
 ## Git
 
 Ajouter au `.gitignore` à la racine du dépôt :

@@ -1,127 +1,204 @@
-# Architecture de HexGL (état actuel)
+# HexGL — Architecture (état actuel)
 
-> Document d'exploration généré à partir du code présent dans le dépôt.
-> Il décrit uniquement ce qui existe aujourd'hui — aucune recommandation, aucun refactor.
+Document descriptif de l'état actuel du projet. Il ne contient ni recommandation, ni plan de correction. Les chemins sont relatifs au dossier `HexGL/` (racine du jeu dans le dépôt).
 
 ## 1. Stack et points d'entrée
 
-- **Nature du projet** : jeu de course futuriste en HTML5/WebGL, propulsé par **Three.js** (bundlé en `libs/`, pas de gestionnaire de paquets). Aucun `package.json`, aucun bundler, aucun outil de build/test. Un seul commit dans l'historique git (`Initialisation du TP`).
-- **Langages** :
-  - JavaScript ES5 « classique » (namespacing manuel via l'objet global `bkcore`) pour la majorité du moteur de jeu (`bkcore/`).
-  - **CoffeeScript** pour une partie plus ancienne/utilitaire (`bkcore.coffee/`), avec son `.js` compilé committé à côté du `.coffee` source (pas de pipeline de build — les deux fichiers sont statiques et doivent être synchronisés à la main).
-  - HTML/CSS classiques pour l'UI (menus, HUD overlay DOM, écrans de fin).
-- **Rendu** : WebGL via Three.js (version vendoree `libs/Three.dev.js`, chargée par `index.html`; une seconde version `libs/Three.r53.js` est présente mais n'est utilisée que par `bkcore.coffee/tests.html`).
-- **Audio** : Web Audio API avec repli sur balise `<audio>` (`bkcore/Audio.js`).
-- **Contrôles** : clavier, tactile, gyroscope (`OrientationController`), manette (`GamepadController`), et Leap Motion (librairie `libs/leap-0.4.1.min.js`).
-- **Point d'entrée HTML** : `index.html` — charge séquentiellement toutes les libs puis tous les modules `bkcore.*` dans un ordre de dépendance manuel (aucun système de modules), et enfin `launch.js`.
-- **Point d'entrée logique** : `launch.coffee` (compilé en `launch.js`, chargé en dernier) — gère l'écran-titre (menu de réglages), instancie `bkcore.hexgl.HexGL` et démarre le chargement des assets.
-- **Métadonnées d'empaquetage legacy** : `manifest.webapp` / `package.webapp` / `package.zip` / `cache.appcache` — vestiges d'un packaging Firefox OS / AppCache (voir §4, zones à risque).
+### Stack
+
+| Couche | Contenu |
+|---|---|
+| Langage | JavaScript ES5 (global, sans modules ni bundler), CoffeeScript 1.x précompilé |
+| Rendu | WebGL via **Three.js** (`libs/Three.dev.js`, ~383 Ko ; `libs/Three.r53.js` présent mais non chargé par le jeu) |
+| Post-traitement | `libs/postprocessing/*` (EffectComposer, RenderPass, BloomPass, ShaderPass, MaskPass…), `libs/ShaderExtras.js`, shaders maison `bkcore/threejs/Shaders.js` |
+| Entrées | clavier, tactile, gamepad, orientation (mobile), Leap Motion (`libs/leap-0.4.1.min.js`) |
+| Audio | Web Audio API (`AudioContext`) avec repli `<audio>` |
+| Divers | `libs/Stats.js`, `libs/DAT.GUI.min.js`, `libs/Detector.js`, Google Analytics (`ga.js`, ID `UA-26274524-4`) |
+| Build | Aucun : pas de `package.json`, pas de gestionnaire de dépendances dans `HexGL/`. Les `.js` de `bkcore.coffee/` et `launch.js` sont des sorties CoffeeScript versionnées à côté de leurs `.coffee` |
+| Serveur | Statique uniquement (README : `python -m SimpleHTTPServer`) ; `.htaccess` ne déclare que des types MIME `.webapp` / `.appcache` |
+| Licence | MIT (README) ; en-têtes de plusieurs fichiers : CC BY-NC 3.0 |
+
+### Points d'entrée
+
+- **`index.html`** : page unique du jeu. Contient le HTML des 5 écrans, l'extrait Google Analytics, et la liste ordonnée des `<script>`.
+- **`launch.js`** (compilé depuis `launch.coffee`) : script de lancement, dernier chargé. Il câble le menu et instancie `bkcore.hexgl.HexGL`.
+- **`formation/tests/index.html`** : point d'entrée des tests QUnit (indépendant du jeu).
+- `manifest.webapp` / `package.webapp` / `cache.appcache` : déclarations Firefox OS / cache applicatif (voir §5).
+- `libs/Editor.html` : éditeur tiers autonome, non lié au jeu.
 
 ## 2. Flux principal de lancement
 
-1. `index.html` affiche `#step-1` (menu : Start / type de contrôle / qualité / HUD / godmode / crédits).
-2. `launch.coffee` (`launch.js`) lit les paramètres d'URL (`bkcore.Utils.getURLParameter`) pour pré-remplir les réglages, et attache les handlers de clic du menu.
-3. Clic sur **Start** → vérifie le support WebGL (`hasWebGL()`, test manuel de contexte `webgl`/`experimental-webgl`) → affiche `#step-2` (écran d'aide selon le type de contrôle).
-4. Clic sur `#step-2` → affiche `#step-3` (barre de progression) → appelle `init(controlType, quality, hud, godmode)`.
-5. `init()` :
-   - instancie `new bkcore.hexgl.HexGL({...})` avec la piste fixée en dur à `'Cityscape'` et `difficulty: 0` ;
-   - appelle `hexGL.load({onLoad, onError, onProgress})`, qui délègue à `track.load()` → `bkcore.threejs.Loader` télécharge textures/géométries/cubemaps/analyseurs (images de collision/hauteur)/sons, en choisissant le jeu de textures `textures/` (basse qualité) ou `textures.full/` (haute qualité) selon le réglage.
-   - `onProgress` met à jour la largeur de la barre de progression.
-   - `onLoad` : appelle `hexGL.init()` (construit HUD, matériaux, scènes via `track.buildMaterials`/`track.buildScenes`, puis le compositeur de post-processing), bascule vers `#step-4` (canvas de jeu) et appelle `hexGL.start()`.
-6. `HexGL.start()` : active le rendu (`manager.setCurrent("game")`), démarre la boucle `requestAnimationFrame` (`raf()` appelant `this.update()`), puis `initGameplay()` qui crée le `Gameplay` (mode `timeattack` par défaut), démarre la musique de fond et le vent.
-7. Chaque frame, `HexGL.update()` appelle `gameplay.update()` (compte à rebours, avancement de course, détection de tour/checkpoint via lecture de pixel sur l'image de collision) puis `manager.renderCurrent()` qui exécute la fonction de rendu enregistrée par `Cityscape.buildScenes` (met à jour `ShipControls`, `ShipEffects`, `CameraChase`, rend via `EffectComposer`, met à jour le HUD).
-8. Fin de course (arrivée après 3 tours ou destruction du vaisseau) → `Gameplay.end()` → après un délai, `HexGL.displayScore()` affiche l'écran de résultat, gère le record local (`localStorage`) et les liens de partage Twitter/Facebook.
-9. Touche **Echap** → `HexGL.reset()` relance la course (sans recharger les assets).
+Écrans définis dans `index.html` : `step-1` (menu), `step-2` (aide contrôles), `step-3` (chargement), `step-4` (jeu), `step-5` (fin de course), plus `credits`.
 
-## 3. Principaux modules, fichiers et assets
+1. **Chargement de la page** : les scripts sont chargés de façon synchrone, dans l'ordre : libs Three/postprocessing → contrôleurs → `Timer`, `ImageData`, `Utils` → `RenderManager`, `Shaders`, `Particles`, `Loader` → `Audio` → `HUD`, `RaceData`, `ShipControls`, `ShipEffects`, `CameraChase`, `Gameplay` → `tracks/Cityscape` → `HexGL` → `launch.js`. Chaque fichier s'enregistre dans l'espace de noms global `bkcore`.
+2. **`launch.js` (exécution immédiate)** :
+   - lit les paramètres d'URL via `bkcore.Utils.getURLParameter` (`controlType`, `quality`, `hud`, `godmode`) ;
+   - initialise les 4 options du menu (contrôles : clavier/tactile/Leap/gamepad ; qualité 0–3, défaut 3 ; HUD ; godmode — l'entrée de menu godmode est `display:none`) ;
+   - teste WebGL (`hasWebGL`) : sinon le bouton *Start* renvoie vers `get.webgl.org`.
+3. **Clic *Start*** : masque `step-1`, affiche `step-2` avec l'image `css/help-<controlType>.png`.
+4. **Clic sur `step-2`** : affiche `step-3` et appelle `init(controlType, quality, hud, godmode)`.
+5. **`init()`** crée `new bkcore.hexgl.HexGL({... track: 'Cityscape', difficulty: 0 ...})`, l'expose en `window.hexGL`, puis appelle `hexGL.load({onLoad, onError, onProgress})`.
+   - Le constructeur `HexGL` règle la taille (divisée par 2 si qualité 0), crée le `THREE.WebGLRenderer` (`initRenderer`), le `RenderManager`, et écoute `Échap` (→ `reset()`).
+6. **`HexGL.load`** → `Cityscape.load(opts, quality)` → `bkcore.threejs.Loader.load(...)` : charge textures, cube map, géométries JSON, analyseurs d'image (`collision.png`, `height.png`), images HUD et sons. Qualité < 2 → `textures/` ; sinon → `textures.full/` (avec cartes speculaires/normales). `onProgress` met à jour `#progressbar`.
+7. **`onLoad`** : `hexGL.init()` (`initHUD` → `Cityscape.buildMaterials` → `Cityscape.buildScenes` → `initGameComposer`), puis `step-3` masqué, `step-4` affiché, `hexGL.start()`.
+8. **`HexGL.start`** : `RenderManager.setCurrent("game")`, démarre la boucle `requestAnimationFrame` (`update` → `Gameplay.update` + `RenderManager.renderCurrent`), puis `initGameplay()` (création de `Gameplay`, `gameplay.start()`, lecture des sons `bg` et `wind`).
+9. **Boucle de jeu** : le callback de rendu enregistré par `Cityscape.buildScenes` (scène `"game"`) met à jour `ShipControls`, `ShipEffects`, `CameraChase`, rend via l'`EffectComposer`, met à jour le HUD et la couleur de vignette (rouge si bouclier < 20 %).
+10. **`Gameplay`** : machine à états par `step` (compte à rebours 3-2-1-Go → `step 4` mode `timeattack` → `step 100` fin). Détection de tours par checkpoints lus dans le pixel de `collision.png` sous le vaisseau. 3 tours.
+11. **Fin de course** : `onFinish` → `shipControls.terminate()` + `HexGL.displayScore` ; avec `gameover` (`#step-5`) fourni par `launch.js`, affiche le temps et masque le conteneur de jeu, retour via `window.location.reload()` au clic.
 
-### 3.1 Moteur de jeu — `bkcore/`
+## 3. Modules, fichiers et assets
+
+### Code applicatif (`bkcore/`, ~3 850 lignes)
+
+| Fichier | Rôle | Lignes |
+|---|---|---|
+| `bkcore/hexgl/HexGL.js` | Façade du jeu : options, renderer, composer, HUD, score, difficulté (`tweakShipControls`) | 446 |
+| `bkcore/hexgl/ShipControls.js` | Physique du vaisseau, entrées (clavier/tactile/gamepad/orientation/Leap), collisions, hauteur, boost | 806 |
+| `bkcore/hexgl/Gameplay.js` | Chronométrage, compte à rebours, tours, checkpoints, résultat | 230 |
+| `bkcore/hexgl/HUD.js` | HUD dessiné en canvas 2D (vitesse, bouclier, temps, tours, messages) | 269 |
+| `bkcore/hexgl/ShipEffects.js` | Booster, lumière, particules d'étincelles/nuages | 186 |
+| `bkcore/hexgl/CameraChase.js` | Caméra de poursuite et mode orbite | 72 |
+| `bkcore/hexgl/RaceData.js` | Enregistrement / relecture de trajectoires (replay) | 98 |
+| `bkcore/hexgl/Ladder.js` | Classement distant (non chargé par `index.html`) | 51 |
+| `bkcore/hexgl/tracks/Cityscape.js` | Définition du circuit : ressources, matériaux, scènes, checkpoints, spawn | 521 |
+| `bkcore/threejs/Loader.js` | Chargeur multi-ressources avec progression | 259 |
+| `bkcore/threejs/RenderManager.js` | Gestion de plusieurs scènes/caméras et de la boucle de rendu | 131 |
+| `bkcore/threejs/Shaders.js` | Shaders GLSL (normal, normalV, hexvignette…) | 949 |
+| `bkcore/threejs/Particles.js` | Système de particules (version chargée par le jeu) | 190 |
+| `bkcore/threejs/Preloader.js` | Préchargeur 3D `CanvasRenderer` (non chargé par `index.html`) | 150 |
+| `bkcore/Audio.js` | Wrapper Web Audio / `<audio>` : `addSound`, `play`, `stop`, `volume`, panner | 141 |
+
+### Code issu de CoffeeScript (`bkcore.coffee/`)
+
+Chaque fichier existe en `.coffee` (source) et `.js` (sortie versionnée, chargée par le navigateur) :
+
 | Fichier | Rôle |
 |---|---|
-| `bkcore/hexgl/HexGL.js` | Orchestrateur principal : init du renderer WebGL, boucle de jeu, gestion des réglages qualité/difficulté (`tweakShipControls`), écran de score. |
-| `bkcore/hexgl/Gameplay.js` | Machine à états de la course (compte à rebours, tours, checkpoints, modes `timeattack`/`survival`(non implémenté)/`replay`). |
-| `bkcore/hexgl/ShipControls.js` (806 lignes) | Cœur physique : lecture des entrées (clavier/tactile/gyro/manette/Leap), intégration mouvement, détection de collision/hauteur par lecture de pixels sur des textures dédiées, gestion bouclier/boost/destruction. Le fichier le plus volumineux et le plus critique. |
-| `bkcore/hexgl/ShipEffects.js` | Effets visuels du vaisseau (booster, particules d'étincelles/nuages lors des collisions). |
-| `bkcore/hexgl/CameraChase.js` | Caméra suiveuse (mode chase) ou orbitale (mode replay). |
-| `bkcore/hexgl/HUD.js` | HUD dessiné sur un `<canvas>` 2D superposé (vitesse, bouclier, temps, tours, messages). |
-| `bkcore/hexgl/RaceData.js` | Enregistrement/rejeu de la trajectoire (position+quaternion horodatés) pour le mode replay et l'export `localStorage`. |
-| `bkcore/hexgl/Ladder.js` | Classement en ligne (chargement JSON distant, affichage top scores) — **non chargé par `index.html`, donc mort en l'état**. |
-| `bkcore/hexgl/tracks/Cityscape.js` | Seule piste implémentée : déclare les assets à charger (2 profils de qualité), construit les matériaux (shaders normal-mapping fait-maison en haute qualité) et les scènes (skybox, décor, spawn du vaisseau, enregistrement de la fonction de rendu par frame). |
-| `bkcore/threejs/RenderManager.js` | Registre de plusieurs couples scène/caméra/fonction de rendu ("render setups"), bascule entre eux (`sky`, `game`). |
-| `bkcore/threejs/Loader.js` | Chargeur générique multi-ressources (textures, cubemaps, géométries JSON, images, sons, "analysers") avec callbacks de progression. |
-| `bkcore/threejs/Particles.js` | Système de particules maison (sprites). |
-| `bkcore/threejs/Shaders.js` (949 lignes) | Bibliothèque de shaders GLSL custom (dont `hexvignette`, `normal`/`normalV`). |
-| `bkcore/threejs/Preloader.js` | Scène 3D de préchargement — **non référencée dans `index.html`, donc mort en l'état**. |
-| `bkcore/Audio.js` | Wrapper Web Audio API (Gain/Panner nodes) avec repli `<audio>` pour les navigateurs sans `AudioContext`. |
+| `Utils.js` | `createNormalMaterial`, `projectOnScreen`, `getURLParameter`, `getOffsetTop`, `scrollTo`, `updateClass`, `request` (XHR), `isTouchDevice` |
+| `Timer.js` | Chronomètre (`start`, `pause`, `update`, `getElapsedTime`) et statiques `msToTime`, `msToTimeString`, `zfill` |
+| `ImageData.js` | Chargement d'image + accès pixel (`getPixel`, `getPixelBilinear`, `getPixelF`, `getPixelFBilinear`) |
+| `controllers/TouchController.js`, `OrientationController.js`, `GamepadController.js` | Contrôleurs d'entrée (`bkcore.controllers.*`) |
+| `threejs/Particles.js` | Autre implémentation de `bkcore.threejs.Particles` (+ `Particle`), non chargée par `index.html` |
+| `tests.html` | Page de test CoffeeScript historique (charge `Timer.js`, `ImageData.js`, `Three.r53.js`, sans assertions) |
 
-### 3.2 Legacy CoffeeScript — `bkcore.coffee/`
-Contient les utilitaires transverses, **chacun avec son `.coffee` source et son `.js` déjà compilé committé côte à côte** :
-- `Utils.coffee/js` : helpers génériques (matériaux normal-map, paramètres d'URL, requêtes XHR maison avec repli `ActiveXObject`, détection tactile, manipulation de classes CSS).
-- `Timer.coffee/js` : chronomètre de course, formatage `ms → h/m/s/ms`.
-- `ImageData.coffee/js` : chargement d'image et lecture de pixels (avec interpolation bilinéaire) — utilisé comme "analyseur" pour les cartes de collision/hauteur/checkpoints.
-- `controllers/` : `TouchController`, `OrientationController`, `GamepadController` — un fichier par périphérique d'entrée, chacun avec test de compatibilité statique (`isCompatible()`).
-- `threejs/Particles.coffee` + son `.js` — **doublon** : un système de particules distinct de `bkcore/threejs/Particles.js` (voir §4).
-- `tests.html` : ne contient aucune assertion, seulement un chargement manuel de scripts dans un navigateur pour test visuel.
+### Assets
 
-Tous ces modules coffee exportent via le pattern `exports = exports ? @ ; exports.bkcore ||= {}`, ce qui les rend **chargeables tels quels sous Node** (`require()`), en plus du navigateur.
-
-### 3.3 Assets
-- `geometries/` (~1,3 Mo) : modèles JSON Three.js (vaisseau `feisar`, piste `cityscape`, bonus, booster).
-- `textures/` (~4,2 Mo) et `textures.full/` (~5,3 Mo) : deux jeux de textures (basse/haute résolution), sélectionnés par `Cityscape.load()` selon la qualité choisie. Le `README.md` mentionne qu'on peut les permuter manuellement pour changer la qualité par défaut.
-- `audio/` (~2,1 Mo) : effets sonores et musique (`.ogg`), licence dédiée dans `audio/LICENSE`.
-- `css/` : polices web (`BebasNeue`), sprites d'aide tactile, styles (`multi.css`, `touchcontroller.css`).
-- `replays/cityscape-casual` : donnée de replay statique (référencée nulle part dans le code lu — à confirmer si consommée ailleurs).
-- `libs/` : dépendances vendorisées (Three.js x2 versions, DAT.GUI, Leap.js, Stats.js, extensions de post-processing Three.js), y compris `libs/Editor.html` et `libs/Editor_files/` (éditeur Three.js vendoré, sans lien apparent avec le jeu lui-même).
+- `geometries/` (1,3 Mo) : modèles JSON Three.js (`.js`) — vaisseau `feisar`, `booster`, `bonus/base`, circuit `cityscape` (track, scrapers1/2, start, startbanner, bonus/speed) et un circuit `edge/track.js` non référencé par le code.
+- `textures/` (4,2 Mo, basse qualité) et `textures.full/` (5,3 Mo, haute qualité) : même arborescence — `bonus`, `hud`, `particles`, `ships`, `skybox/dawnclouds`, `tracks/cityscape` (dont `collision.png` et `height.png`).
+- `audio/` (2,1 Mo) : `bg.ogg`, `boost.ogg`, `crash.ogg`, `destroyed.ogg`, `wind.ogg` (+ `LICENSE`). Seul le format `.ogg` est fourni.
+- `css/` (1,7 Mo) : `multi.css`, `fonts.css`, `touchcontroller.css`, police BebasNeue (eot/svg/ttf/woff), images d'aide `help-0..3.png`, `title.png`, `bg.jpg`, images mobiles.
+- `replays/cityscape-casual/bkcore.replay.json` : trajectoire enregistrée (tableaux `[temps, x, y, z, qx, qy, qz, qw]`).
+- Racine : `favicon.png`, `icon_{32,64,128,256}.png`, `package.zip`.
+- `formation/` : `identite/charte_graphique_acme.pdf`, `tickets/company-event.md` (ticket de personnalisation ACME), `tests/` (QUnit, voir §5).
 
 ## 4. Dépendances et zones legacy à risque
 
-- **Deux versions de Three.js committées** (`Three.dev.js` utilisé, `Three.r53.js` inutilisé sauf par `tests.html`) : source de confusion sur la version réellement active ; API Three.js très ancienne (`translateX`/`translateZ`, `rotateAxis`, `addSelf`/`subSelf`/`multiplySelf` — méthodes mutantes dépréciées depuis longtemps dans Three.js moderne).
-- **Sources CoffeeScript + JS compilé committés en parallèle, sans pipeline de build** : rien ne garantit que le `.js` chargé par `index.html` correspond au `.coffee` à côté (observé : en-têtes `// Generated by CoffeeScript` avec des numéros de version différents selon les fichiers — 1.4.0 pour `Timer.js`, 1.6.3 pour `GamepadController.js`, 1.7.1 pour `TouchController.js` —, preuve que les fichiers ont été recompilés à des moments différents avec des compilateurs différents).
-- **Manifeste `cache.appcache` cassé** : référence `bkcore/Timer.js`, `bkcore/ImageData.js`, `bkcore/Utils.js` alors que ces fichiers vivent réellement sous `bkcore.coffee/` ; référence aussi `index-mobile.html` (comme `manifest.webapp`), fichier absent du dépôt. AppCache est de toute façon une API web obsolète/retirée des navigateurs modernes.
-- **Modules chargés mais jamais utilisés dans le flux réel** : `bkcore/hexgl/Ladder.js` (classement en ligne) et `bkcore/threejs/Preloader.js` ne sont référencés par aucun `<script>` de `index.html` — code mort maintenu sans être exécuté.
-- **Doublon de système de particules** : `bkcore/threejs/Particles.js` (chargé par `index.html`) et `bkcore.coffee/threejs/Particles.coffee`/`.js` (non chargé) coexistent avec un contenu différent — ambiguïté sur laquelle est la version de référence.
-- **Fichier `bkcore.coffee/ImageData.coffee` vs `bkcore.coffee/Timer.coffee`** : ces deux fichiers sont en réalité chargés par leur `.js` compilé sous le chemin `bkcore.coffee/*.js` dans `index.html` (`bkcore.coffee/Timer.js`, `bkcore.coffee/ImageData.js`, `bkcore.coffee/Utils.js`), ce qui diffère du chemin `bkcore/*.js` supposé par `cache.appcache` (cf. point ci-dessus).
-- **Couplage fort au DOM/navigateur** : la quasi-totalité du moteur (`HexGL`, `ShipControls`, `Gameplay`, `HUD`, `Audio`) dépend directement de `document`, `window`, `THREE.*`, `localStorage`, `AudioContext`, rendant le test unitaire impossible sans mocks lourds.
-- **Gestion d'erreurs quasi absente** : peu de `try/catch` (présents seulement autour du JSON de replay et du chargement de la ladder) ; la plupart des accès DOM (`document.getElementById(...)`) dans `HexGL.displayScore` supposent l'existence d'éléments qui ne sont pas dans `index.html` fourni (`finish`, `finish-state`, `finish-lap1`, etc. — absents du DOM actuel), ce qui provoquerait des erreurs silencieuses (`!= undefined` guards) ou une exception sur `dc.style.display` (`dc` = `getElementById("finish")`, non gardé par un test d'existence).
-- **Aucun outillage de projet** : pas de `package.json`, pas de linter, pas de bundler, pas de framework de test, un seul commit git. Toute modification du CoffeeScript nécessite un compilateur externe non fourni dans le dépôt.
-- **Analytics Google codé en dur** dans `index.html` (compte `UA-26274524-4`) et liens de partage Twitter/Facebook pointant vers `hexgl.bkcore.com` en dur dans `HexGL.js`.
-- **Licences hétérogènes** : `LICENSE` racine (MIT selon `README.md`), mais l'en-tête de chaque fichier `bkcore/*` mentionne une licence *Creative Commons BY-NC 3.0*, et `audio/LICENSE` est distincte — incohérence de licence entre le `README.md` et les en-têtes de code.
+### Dépendances
 
-## 5. Fonctions/modules testables avec Node, sans navigateur
+- **Three.js (version ancienne, ~r53 / « dev »)** : API aujourd'hui retirée utilisée partout : `THREE.ImageUtils.loadTexture`, `uniforms[...].texture`, `ShaderUtils.lib`, `THREE.Sprite({...})`, `geometry.computeTangents()`, `lerpSelf`/`slerpSelf`, `renderer.physicallyBasedShading`, `mesh.flipSided`/`doubleSided`, `CubeGeometry`, `JSONLoader`.
+- Les shaders et le post-traitement dépendent du format interne de cette version de Three.
+- Leap Motion (`leap-0.4.1`), GA (`ga.js` en HTTP/HTTPS), Facebook/Twitter (URL de partage dans `HexGL.displayScore`) : services externes historiques.
+- `index.html` référence des URL absolues vers `hexgl.bkcore.com` (favicon, `og:image`, `og:url`).
 
-Grâce au pattern d'export CommonJS-compatible (`exports.bkcore ||= {}`), les modules suivants sont chargeables directement sous Node (`require(...)`) :
+### Zones legacy à risque
 
-- **`bkcore.Timer`** (`bkcore.coffee/Timer.js`) : entièrement pur à l'exception de `start()`/`update()` qui appellent `new Date().getTime()`. Les fonctions statiques `Timer.msToTime(t)`, `Timer.msToTimeString(t)` et `Timer.zfill(num, size)` sont des fonctions pures testables telles quelles.
-- **`bkcore.ImageData`** (`bkcore.coffee/ImageData.js`) : le constructeur dépend de `Image`/`document.createElement('canvas')` (navigateur), mais les méthodes `getPixel`, `getPixelBilinear`, `getPixelF`, `getPixelFBilinear` sont des fonctions pures opérant sur `this.pixels.data` (un tableau plat RGBA) — testables en construisant un faux objet `{pixels: {width, height, data}}` sans passer par le constructeur ni par un navigateur.
-- **`bkcore.Utils`** (`bkcore.coffee/Utils.js`) : `Utils.zfill`-like helpers non présents ici, mais noter que la plupart des méthodes (`createNormalMaterial`, `projectOnScreen`, `getURLParameter`, `getOffsetTop`, `scrollTo`, `updateClass`, `request`) dépendent de `THREE`, `window` ou `document` et **ne sont pas testables sans mock**. Seule `Utils.isTouchDevice` est quasi pure (dépend de `window`/`navigator` mockables simplement).
-- **`bkcore.hexgl.Timer`/formatters de `HUD`** : la logique de formatage dans `HUD.updateTime` dépend d'objets `{m,s,ms}` déjà calculés par `Timer` — combinable en test pur si on extrait juste la concaténation de chaînes.
-- **Calculs physiques isolables dans `ShipControls`** : les méthodes `getRealSpeed`, `getRealSpeedRatio`, `getSpeedRatio`, `getBoostRatio`, `getShieldRatio`, `getShield` sont de simples calculs arithmétiques sur des champs numériques (`speed`, `boost`, `maxSpeed`, `shield`, `maxShield`) — testables en instanciant l'objet et en fixant ces champs directement, sans navigateur ni Three.js réel (le constructeur complet nécessite cependant `THREE.Vector3`/`THREE.Quaternion`/`THREE.Object3D`, donc `THREE` doit être chargé en mémoire, mais sans DOM).
-- **`bkcore.hexgl.RaceData`** : `tick`, `export`, `import`, `reset` manipulent des tableaux/JSON simples ; `applyInterpolated` appelle `this.shipControls.teleport(...)`, donc testable en injectant un `shipControls` factice (`{teleport: fn, getPosition, getQuaternion}`). Dépend aussi de `THREE.Vector3`/`THREE.Quaternion` pour les champs internes.
-- **Non testables sans navigateur/mock lourd** : `HexGL`, `Gameplay`, `HUD` (canvas 2D), `Audio` (Web Audio/`<audio>`), `RenderManager` (`window.performance`), `Loader` (XHR/Image/THREE loaders), les contrôleurs (`TouchController`, `OrientationController`, `GamepadController` — dépendent tous de `window`/`navigator`/événements DOM), et `Cityscape.js` (assemble tout le reste).
+- **Espace de noms global et ordre des scripts** : tout repose sur `window.bkcore` et l'ordre des balises `<script>` ; aucune gestion de modules.
+- **Double arborescence `bkcore/` vs `bkcore.coffee/`** : `Timer`, `ImageData`, `Utils` sont dans `bkcore.coffee/` mais exposés sous `bkcore.*` ; deux fichiers `Particles.js` coexistent.
+- **Sources `.coffee` et sorties `.js` versionnées côte à côte** ; versions de compilateur différentes selon les fichiers (1.4.0, 1.6.3, 1.7.1).
+- **`ShipControls.js` (806 lignes)** : physique, entrées multiples et collisions mêlées dans un seul constructeur ; couplé à `HexGL` (`ctx`), à `THREE` et aux `ImageData` de collision/hauteur.
+- **`Cityscape.js`** : mélange données de circuit, chargement, matériaux, construction de scène, boucle de rendu (callback `ctx.manager.add("game", …)`) et pilotage de composants via `this.objects`.
+- **`HexGL.js`** : couplage fort avec le DOM (`document.getElementById("finish*")`), `localStorage`, `Ladder`, réseaux sociaux.
+- **Communication par chaînes/IDs** : ressources adressées par noms de chaînes (`"track.cityscape.diffuse"`…) ; `Loader.get` renvoie `null` + `console.warn` si inconnu.
+- **Dépendance à la résolution** : constantes `2048.0 / 6000.0` répétées (`pixelRatio`, `collisionPixelRatio`, `heightPixelRatio`), spawn `-1134*2, 387, -443*2` codés en dur.
+- **Qualités / plateformes** : commentaires « desktop/mobile + quality » indiquant une logique de qualité réécrite (HexGL.js l. 36-43) ; seuils `quality > 2`, `< 2`, `> 0` dispersés.
+- **Codes de contrôle** : `controlType` 0 clavier, 1 tactile, 2 Leap, 3 gamepad (menu de `launch.js`) ; `ShipControls` gère aussi `4` (orientation), absent du menu.
+- **Audio** : `AudioContext` + `createPanner`/`setPosition` (API dépréciées), `noteOn/noteOff`, seuls les `.ogg` fournis.
 
-## 6. Bugs, dettes ou anomalies remarquables
+## 5. Fonctions et modules testables automatiquement
 
-1. **`HexGL.js` (`displayScore`)** : `localStorage['race-'+t+'-replay'] = JSON.Stringify(...)` — `JSON.Stringify` n'existe pas (la méthode standard est `JSON.stringify`, casse différente). Cette ligne lève une `TypeError` non interceptée dès qu'un joueur bat son record local, dans le bloc où le nouveau record est censé être sauvegardé.
-2. **`ShipControls.js`, callback du `GamepadController`** (lignes ~161-170) : absence d'accolades sur le `if/else` —
-   ```js
-   if (controller.select) ctx.restart();
-   else self.key.forward = controller.acceleration > 0;
-       self.key.ltrigger = controller.ltrigger > 0;
-       self.key.rtrigger = controller.rtrigger > 0;
-       self.key.left = controller.lstickx < -0.1;
-       self.key.right = controller.lstickx > 0.1;
-   ```
-   Seule l'affectation de `self.key.forward` est réellement conditionnée par `else` ; les quatre lignes suivantes s'exécutent à chaque frame quel que soit `controller.select`, y compris pendant un `restart()`.
-3. **`Gameplay.js`, mode `replay`** : `self.end(self.result.REPLAY)` — devrait être `self.results.REPLAY` (avec un `s`). `self.result` est la valeur courante du résultat (initialement `-1`/`NONE`), pas l'objet énumération ; `self.result.REPLAY` vaut donc `undefined`, et `end(undefined)` ne correspond à aucune branche de `Gameplay.end`, donc l'écran de fin de replay ne s'affiche jamais correctement (le mode `replay` n'est de toute façon déclenché nulle part dans le flux normal du jeu, `mode` étant fixé à `'timeattack'` dans `launch.coffee`).
-4. **`RaceData.tick`** : la logique de sous-échantillonnage (`rate`/`rateState`) est cassée — `rateState` vaut `1` à l'initialisation et n'est jamais réinitialisé à `1` après être passé à `0`, donc la branche `if(this.rateState == 1)` reste vraie indéfiniment dès le premier appel et enregistre une donnée à **chaque** tick, tandis que la branche `else if` (censée réinitialiser l'état tous les `rate` ticks) et l'incrémentation de `rate` deviennent des effets sans but (le `this.rate` croît sans borne, `rateState` ne revient jamais à `1` par ce chemin mais reste bloqué à `1` de toute façon). Le throttling visé (n'enregistrer qu'un tick sur `rate`) n'a donc aucun effet.
-5. **`Ladder.js`** : incohérence de namespace — le fichier déclare `bkcore.hexgl.Ladder` mais `load()` écrit dans `bkcore.Ladder.global` (sans `.hexgl`), et `displayLadder()` lit `bkcore.Ladder.global[...]` également sans `.hexgl`. Combiné au fait que ce module n'est pas chargé par `index.html` (§4), le classement en ligne est totalement non fonctionnel en l'état.
-6. **`Ladder.displayLadder`** : condition `!bkcore.Ladder.global[track][mode] == undefined` — erreur de précédence d'opérateurs (`!` s'applique avant `==`), rendant le test toujours vrai ou toujours faux selon la valeur, jamais le contrôle attendu (« si non défini »).
-7. **`CameraChase.js`** : `this.yoffset = opts.yoffest == undefined ? 8.0 : opts.yoffest;` — faute de frappe (`yoffest` au lieu de `yoffset`) sur la clé lue, alors que l'appelant (`Cityscape.js`) passe bien `yoffset: 8.0`. La valeur personnalisée est donc silencieusement ignorée au profit de la valeur par défaut (qui vaut coïncidemment la même chose ici, mais le mécanisme de configuration est cassé).
-8. **`ShipControls.js`, `control()`** : `this.mesh.martixAutoUpdate = false;` — faute de frappe (`martix` au lieu de `matrix`), donc `matrixAutoUpdate` de l'objet Three.js n'est jamais réellement désactivé ; cette ligne n'a aucun effet.
-9. **`Utils.coffee`, `isTouchDevice`** : teste `navigator.MaxTouchPoints` (majuscule `M`) — la propriété standard est `navigator.maxTouchPoints` (minuscule). Cette branche de détection est donc morte (toujours `undefined`), et seule `'ontouchstart' of window` reste opérationnelle.
-10. **`Utils.coffee`, `request`** : `for i in [0..XMLHttpFactories.length]` (borne supérieure inclusive) itère un indice de trop (`XMLHttpFactories[length]` est `undefined`), provoquant systématiquement une exception interceptée par le `try/catch` interne à la dernière itération — sans conséquence fonctionnelle grâce au `catch`, mais source de bruit/`try` inutile.
-11. **Incohérence de licence** : `README.md` annonce une licence MIT globale, mais l'en-tête de la majorité des fichiers sous `bkcore/` déclare *Creative Commons BY-NC 3.0* (non commerciale) — ambiguïté juridique sur la licence réellement applicable au code.
-12. **Fichiers de configuration mobile obsolètes/cassés** : `manifest.webapp` et `cache.appcache` pointent vers `index-mobile.html`, absent du dépôt ; `cache.appcache` référence en plus des chemins de fichiers incorrects pour `Timer.js`/`ImageData.js`/`Utils.js` (voir §4).
-13. **Assets et code référencés mais non branchés** : `bkcore/hexgl/Ladder.js`, `bkcore/threejs/Preloader.js`, `bkcore.coffee/threejs/Particles.coffee`/`.js` (doublon), et le dossier `replays/cityscape-casual` ne sont exploités par aucun chemin de code actif identifié dans `index.html`/`launch.coffee`.
-14. **`Gameplay.modes.timeattack`** : le mode `'survival'` est déclaré dans `this.modes` mais sa valeur reste `null` — s'il était sélectionné (aucun point d'entrée actuel ne le permet), `this.modes[this.mode].call(this)` lèverait une `TypeError` (`null` n'est pas une fonction).
-15. **`HexGL.displayScore`** : accède à de nombreux éléments DOM (`finish`, `finish-state`, `finish-lap1`, `finish-twitter`, `lowfps-msg`, etc.) qui ne sont présents dans aucun des `<div>` de `index.html` fourni ; le code est protégé par des tests `!= undefined` pour la plupart des écritures, mais `dc.style.display = 'block';` en fin de fonction est appelé sans garde sur `dc` (`= getElementById("finish")`), ce qui lèverait une exception si `this.gameover` est `null` (cas où `opts.gameover` n'est pas fourni) — dans le flux actuel `opts.gameover` vaut `$('step-5')` donc la branche `if(this.gameover !== null)` court-circuite avant d'atteindre ce code, mais la fonction resterait fragile si appelée avec `gameover: null`.
+### Tests QUnit existants (`formation/tests/`)
+
+- `index.html` : charge `vendor/qunit-2.26.0.js/.css`, **uniquement** `../../bkcore.coffee/Utils.js` et `browser-tests.js`. Redirige vers lui-même avec `?hexgl_poc=ok` si le paramètre est absent.
+- `browser-tests.js` : un module `HexGL — bkcore.Utils` avec 4 tests :
+  1. `updateClass` ajoute une classe ;
+  2. `updateClass` supprime une classe ;
+  3. `getOffsetTop` additionne les décalages parent/enfant (objets simulés) ;
+  4. `getURLParameter` lit `hexgl_poc` (valeur attendue `"ok"` si présent dans l'URL, sinon `null`… voir §6).
+  - `QUnit.done` écrit `data-test-count`, `data-test-failures`, `data-test-status` sur `<html>` ; le statut est `pass` si aucun échec **et** `count >= 4`.
+- `ci-chrome.bat` (97 l.) / `ci-chrome.sh` (75 l.) : lancent Chrome/Chromium/Edge en headless, codes de sortie 0 (réussi), 1 (échec), 2 (impossible), rapport `rapport_erreur.html` généré uniquement en cas d'erreur.
+- `.github/workflows/hexgl-browser-tests.yml` (sous `formation/tests/`) : job `windows-latest` appelant `HexGL\formation\tests\ci-chrome.bat` ; `README.md` indique de le placer à la racine du dépôt.
+
+### Couverture actuelle
+
+Seules `Utils.updateClass`, `Utils.getOffsetTop` et `Utils.getURLParameter` sont couvertes.
+
+### Fonctions/modules testables sans WebGL ni rendu
+
+Candidats sans dépendance à Three.js ni au GPU, d'après le code actuel :
+
+| Module / fonction | Nature | Remarques |
+|---|---|---|
+| `bkcore.Timer.msToTime`, `msToTimeString`, `zfill` | Fonctions pures statiques | Aucune dépendance |
+| `bkcore.Timer` (instance : `start`, `pause`, `update`, `getElapsedTime`) | Basée sur `Date` | Horloge système non injectée |
+| `bkcore.ImageData.getPixel`, `getPixelBilinear`, `getPixelF`, `getPixelFBilinear` | Calcul sur `this.pixels` | Le constructeur charge une `Image` ; `pixels` peut être affecté directement (`{width,height,data}`) |
+| `bkcore.Utils.getURLParameter`, `getOffsetTop`, `updateClass`, `isTouchDevice`, `request` | DOM / `window` | Déjà partiellement testés ; `request` utilise `XMLHttpRequest` |
+| `bkcore.controllers.GamepadController.isCompatible` / `updateAvailable` | Dépend de `navigator.getGamepads` | `navigator` simulable |
+| `bkcore.controllers.OrientationController`, `TouchController` | Dépendent d'événements DOM / `window` | Chargés sans Three.js |
+| `bkcore.hexgl.Ladder.displayLadder` | Manipulation DOM + `Timer` | Voir anomalies (références à `bkcore.Ladder`) |
+| `bkcore.hexgl.RaceData` (`tick`, `export`, `import`, `reset`) | Données + `THREE.Vector3/Quaternion` au constructeur | Nécessite Three.js (`THREE` doit exister) |
+| `bkcore.hexgl.Gameplay` (compte à rebours, `checkPoint`, `end`, `simu`) | Logique d'état | Dépend de `bkcore.Timer`, `RaceData` (donc `THREE`), d'un `shipControls` et d'un `analyser.getPixel` simulables |
+| `bkcore.threejs.Loader.get` / `loaded` / `updateState` | Logique de progression | Le constructeur crée un `THREE.JSONLoader` |
+| `bkcore.threejs.RenderManager` (`add`, `get`, `remove`, `setCurrent`) | Logique de registre | Dépend d'un `renderer` simulable et de `window.perfNow` |
+| `HexGL.tweakShipControls` | Affectation de paramètres selon `difficulty` / `godmode` | Fonction appelée sur un objet de composants ; sa lecture n'exige pas WebGL si invoquée via prototype avec un contexte simulé |
+
+### Non testable automatiquement en l'état
+
+- `HexGL` constructeur / `initRenderer` / `initGameComposer` (créent `THREE.WebGLRenderer`).
+- `ShipControls.update`, `collisionCheck`, `heightCheck` (dépendent de maps pixel, de Three et du temps).
+- `Cityscape.load/buildScenes`, `Shaders.js`, `HUD.js` (canvas), `Audio.js` (réseau + Web Audio), `Preloader.js`.
+- `launch.js` : IIFE qui s'exécute au chargement et manipule directement le DOM de `index.html`.
+
+## 6. Bugs, dettes et anomalies remarquables
+
+Constats issus de la lecture du code ; aucun n'a été corrigé.
+
+### Anomalies probables (erreurs à l'exécution ou comportements incorrects)
+
+1. **`HexGL.js` l. 228 — `JSON.Stringify`** (majuscule) : `JSON.Stringify` n'existe pas (`JSON.stringify`) → `TypeError` dans la branche « nouveau record local ».
+2. **`HexGL.js` l. 222-228, 236, 273 — clé `t`** : `t = this.track` est un objet ; les clés `localStorage['score-'+t+'-'+d]` deviennent `score-[object Object]-casual`. `Gameplay.start` lit en mode replay la clé `race-<track.name>-replay` (`race-Cityscape-replay`) → clés d'écriture et de lecture différentes.
+3. **`HexGL.js` l. 236, 273 et `Ladder.js`** : `displayScore` et `Ladder.displayLadder` utilisent `bkcore.hexgl.Ladder.global[t][d]` ; `Ladder.js` lit/écrit `bkcore.Ladder.global` (espace de noms inexistant) ; `Ladder.js` n'est pas chargé par `index.html` ; `Ladder.load` appelle l'URL `"nothing"`. Ces chemins ne sont atteints que si `gameover` est `null` (non le cas avec `launch.js`, qui renvoie avant).
+4. **`Gameplay.js` mode `replay`** : `self.end(self.result.REPLAY)` — `self.result` est un nombre ; l'objet est `self.results` → `undefined.REPLAY`. En mode `replay`, `Gameplay.start` retourne `false` sans lancer de timer en cas d'échec d'import ; `HexGL.reset` ne gère pas ce retour.
+5. **`RaceData.js` — `tick`** : le compteur incrémenté est `this.rate` (au lieu de `this.rateState`) ; `rateState` reste à 1 donc chaque appel enregistre un point, et `rate` croît sans borne.
+6. **`RaceData.js` — `applyInterpolated`** : lit `this.data[this.seek]` avant le test `this.seek < 0` ; au premier ou dernier point, `teleport` est appelé puis le code continue vers `next = this.data[this.seek+1]` (pas de `return` après « no interpolation »), `next` peut être `undefined` quand `seek == last`.
+7. **`Gameplay.js` — `modes.timeattack`** : utilise `this.timer` (et `this.maxLaps`) alors que `this` dépend de l'appel (`.call(this)` dans `update`) ; fonctionne uniquement parce que `update` appelle avec `.call(this)`.
+8. **`Gameplay.js` — `checkPoint`** : lit `analyser.pixels` ; avant fin de chargement de l'image, `ImageData.getPixel` renvoie `{r:0,g:0,b:0,a:0}`.
+9. **`Gameplay.simu`** : méthode de débogage laissée dans le code (temps de tours codés en dur `92300, 91250, 90365`), non appelée par le jeu.
+10. **`Loader.js` — `loadSound(src, name, loop)`** : accepte trois arguments mais `Loader.load` passe `usePanner` en quatrième ; `usePanner` est ignoré par `Loader` donc `Audio.addSound` reçoit `usePanner === undefined` (panner jamais utilisé via le loader).
+11. **`Loader.updateState`** : appelle `loadCallback` chaque fois que `loaded == total`, y compris quand `state` est `false` (initialisation) si `total == 0`, et peut être appelé plusieurs fois ; les erreurs de chargement de sons, de géométries et de cube map ne déclenchent pas `errorCallback`.
+12. **`Audio.js` — `addSound`** : `var audio` est déclaré deux fois ; en cas d'échec de décodage, `callback` n'est jamais appelé donc le chargement ne se termine jamais (la barre de progression reste bloquée).
+13. **`Ladder.displayLadder`** : condition `!bkcore.Ladder.global[track][mode] == undefined` (toujours `false`) ; variable `m` calculée mais non utilisée ; boucle sur `l.length-1`.
+14. **`Utils.request`** : boucle `0 <= _ref` sur `XMLHttpFactories.length` avec `<=` (dépassement d'index → `TypeError` capturé) ; `url += "?" + qdata` répété dans la boucle d'itération ; envoi de `qdata` même en GET.
+15. **`Utils.projectOnScreen`** : utilise `mat.n44`, `mat.n14`… (API Matrix4 de Three ancien) ; `mat.multiply(a, b)` à deux arguments ancienne signature.
+16. **`ImageData.getPixelF`** : `c.r + c.g*255 + c.b*255*255` (base 255, au lieu de 256).
+17. **`Timer.msToTime`** : propriété `ms` dupliquée dans l'objet retourné ; `ms` (reste modulo 1000) n'est pas arrondi.
+18. **`launch.js`** : la valeur de `godmode` passée à `HexGL` est `0` ou `1` (entier) ; `hud` est comparé à `1` ; `quality` par défaut 3 y compris sur mobile.
+19. **`HexGL.js` constructeur** : `this.a = window.location.href` ; commentaire `//if(this.a[15] == "o")` désactivé dans `start()` (reliquat d'une vérification de domaine).
+20. **`Cityscape.load` (qualité haute)** : `console.log('HIGH')` en production ; nombreux `console.log` dans `Loader`/`ShipControls` (`GAMEOVER`), `RaceData.import`, `launch.js`.
+21. **`ShipControls.js` l. ~174** : `if(Leap == null)` lèverait `ReferenceError` si `Leap` n'est pas défini (testé après chargement de `leap-0.4.1.min.js`).
+
+### Incohérences de configuration et de packaging
+
+- **`cache.appcache`** liste `bkcore/Timer.js`, `bkcore/ImageData.js`, `bkcore/Utils.js` (inexistants : les fichiers sont dans `bkcore.coffee/`) et omet `bkcore/Audio.js`, `GamepadController.js`, `libs/leap-0.4.1.min.js`, `audio/*`, `launch.js`, `textures.full/*`. Les textures référencées correspondent à `textures/`.
+- **`manifest.webapp`** : `launch_path: /index-mobile.html`, fichier absent du dépôt.
+- **`index.html`** : le menu godmode est masqué (`display:none`) mais initialisé par `launch.js` ; `favicon`/`og:image` pointent vers des URL absolues externes ; analytics Google (`UA-…`, Universal Analytics, `ga.js` historique).
+- **Fichiers non utilisés par `index.html`** : `Ladder.js`, `Preloader.js`, `bkcore.coffee/threejs/Particles.js`, `libs/Three.r53.js`, `libs/Editor.html` et `Editor_files/`, `geometries/tracks/edge/track.js`, `package.zip`, `textures/checker.png`.
+- **`.gitignore` racine du dépôt** ignore `.DS_Store` et `/HexGL/formation/tests/rapport_erreur.html` ; le workflow CI se trouve dans `HexGL/formation/tests/.github/workflows/` (et non à la racine du dépôt), donc non pris en compte par GitHub Actions dans cette position.
+- **Licences** : README « MIT » ; en-têtes sources « CC BY-NC 3.0 » dans de nombreux fichiers (`HexGL.js`, `Gameplay.js`, `Cityscape.js`…) ; `RenderManager.js` « MIT ».
+- **Qualité du dépôt** : dossier `etapes/` à la racine du dépôt (hors `HexGL/`) contenant des livrables de TP (docs, tests Node `A3-figer-les-comportements`, workflows `B10`) sans lien d'exécution avec le jeu.
+
+### Particularités des tests existants
+
+- Test `getURLParameter` : le paramètre `hexgl_poc` est ajouté par la redirection de `index.html` ; l'attendu dépend de `window.location.search` (la variable `url` calculée n'est pas utilisée).
+- Le statut `pass` exige `count >= 4` (valeur codée en dur).
+- `Utils.URLParameters` est un cache statique remis à `null` par le test.
+- Aucun test ne couvre `Timer`, `ImageData`, les contrôleurs, `Gameplay`, `RaceData`, `Loader`, `RenderManager`, `Audio`, `HexGL`, `ShipControls`, `launch.js`.

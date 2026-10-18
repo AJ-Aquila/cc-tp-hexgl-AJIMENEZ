@@ -1,179 +1,91 @@
-# Spécification — Personnalisation événementielle HexGL pour ACME
+# Spécification — Personnalisation événementielle ACME de l'écran d'accueil HexGL
 
-> Décrit ce que l'on veut obtenir et pourquoi. Ne définit pas la solution technique
-> (fichiers à modifier, architecture, implémentation).
->
-> Sources : `formation/tickets/company-event.md` (besoin métier),
-> `formation/identite/charte_graphique_acme.pdf` (contraintes d'identité visuelle,
-> valeur de vérité graphique pour ce TP), `formation/identite/logo.png` (asset logo),
-> `docs/architecture.md` (état actuel du code).
+Sources : `formation/tickets/company-event.md` (source de vérité du besoin), `formation/identite/charte_graphique_acme.pdf` et `formation/identite/logo.png` (contraintes d'identité), `docs/architecture.md` (état actuel).
 
 ## 1. Contexte et objectif
 
-ACME souhaite utiliser HexGL comme animation lors d'un événement d'entreprise
-(« ACME Racing Challenge »). Le jeu lui-même (piste, physique, HUD de course)
-n'a pas besoin de changer : ce qui doit changer, c'est la **première impression**
-que le joueur a en ouvrant le jeu, afin qu'elle porte l'identité visuelle d'ACME
-plutôt que celle de HexGL/BKcore.
+ACME veut utiliser HexGL lors d'un événement d'entreprise. L'écran d'accueil actuel (écran `step-1`) affiche le titre « HexGL by BKcore », un fond flouté de la ville et un menu bleu/orange (Start, Controls, Quality, HUD, Credits). Rien n'y évoque ACME.
 
-Aujourd'hui, l'écran d'accueil (premier écran visible, avant tout clic) affiche
-une image de fond et un titre graphique propres à HexGL, un menu de réglages
-(type de contrôle, qualité, HUD, godmode) et un bouton de démarrage, le tout
-dans une palette bleu/orange sans lien avec ACME (cf. `docs/architecture.md`,
-§1-2, et `css/multi.css`).
-
-**Objectif** : que l'écran d'accueil de HexGL affiche le logo ACME, les couleurs
-de la charte graphique et le message d'accueil de référence, pour que
-l'expérience démarre clairement sous l'identité ACME — sans toucher à ce qui
-fait le jeu (course, contrôles, HUD, physique).
+**Objectif** : l'écran d'accueil doit afficher l'identité ACME (logo, nom, message d'accueil, couleurs de la charte) de façon sobre et maintenable. **Le gameplay reste strictement inchangé.**
 
 ## 2. Exigences fonctionnelles
 
-1. Le logo ACME (asset fourni, `formation/identite/logo.png`) est affiché sur
-   l'écran d'accueil, intégralement, sans déformation, net et bien contrasté
-   par rapport à son environnement immédiat. La solution garantissant ce
-   contraste (choix du fond, d'un support, etc.) relève de la conception,
-   pas de cette spécification.
-2. **Décision produit** : l'identité visuelle HexGL actuellement affichée sur
-   l'écran d'accueil (titre/logo HexGL) est remplacée par l'identité ACME —
-   elle ne doit plus être affichée sur cet écran. Les écrans de crédits et
-   leurs attributions restent inchangés (cf. §6, hors périmètre).
-3. **Décision produit** : la présence du nom « ACME » dans le logo et/ou dans
-   le message d'accueil suffit ; aucune occurrence séparée du nom n'est
-   requise.
-4. Le message d'accueil affiché est le texte de référence donné par la charte :
-   **« Bienvenue au ACME Racing Challenge »**, repris tel quel (pas reformulé,
-   pas traduit différemment).
-5. L'habillage visuel de l'écran d'accueil (fond, accents, éléments mis en
-   avant) utilise la palette ACME définie par la charte : fond principal sombre
-   (noir profond `#08090D`), accents violet (`#7628FF`), bleu électrique
-   (`#315BFF`) et cyan (`#00C4E8`), texte en blanc (`#FFFFFF`) ou gris clair
-   (`#E6E8EE`) pour les surfaces secondaires ; le dégradé événementiel
-   violet → bleu (`#7628FF` → `#315BFF`) est autorisé pour les éléments
-   événementiels (ex. bouton d'action).
-6. Le gameplay (physique du vaisseau, détection de collision, boucle de
-   course), les contrôles (clavier/tactile/manette/gyroscope/Leap) et le HUD
-   affiché pendant la course restent strictement inchangés.
+- **EF1 — Logo** : le logo ACME fourni (`logo.png`) est visible sur l'écran d'accueil, sans déformation (ratio d'origine 2172×724 conservé), sans recoloration, sans ombre ni contour.
+- **EF2 — Nom de l'entreprise** : le nom « ACME » apparaît sur l'écran d'accueil, au moins via le message d'accueil et le logo.
+- **EF3 — Message d'accueil** : le texte exact « Bienvenue au ACME Racing Challenge » est affiché (formulation de référence de la charte, reprise telle quelle). Le sous-titre « Une expérience événementielle aux couleurs de la marque. » est affiché, comme dans l'intention visuelle de la charte.
+- **EF4 — Bouton de démarrage** : le libellé du bouton de lancement devient « DÉMARRER LA COURSE ».
+- **EF5 — Couleurs** : l'écran d'accueil utilise la palette de la charte (voir §5). Le fond principal est sombre ; violet, bleu électrique et cyan servent d'accents. Le dégradé événementiel `#7628FF → #315BFF` est autorisé.
+- **EF6 — Élément HexGL/BKcore** : le visuel de titre « HexGL by BKcore » et le fond actuel (`bg.jpg`) ne figurent plus sur l'écran d'accueil ; ils sont remplacés par un fond sombre de marque.
+- **EF7 — Menu** : les options Controls, Quality, HUD et Credits restent présentes, fonctionnelles et en anglais ; seule leur apparence (couleurs) s'aligne sur la charte.
+- **EF8 — Crédits** : l'accès à Credits est conservé (attribution des auteurs du jeu et des assets).
 
 ## 3. Comportements attendus
 
-- Au lancement de l'application, le tout premier écran vu par le joueur porte
-  l'identité ACME (logo + message d'accueil) — pas d'étape intermédiaire
-  encore brandée HexGL avant cet écran.
-- Toutes les actions déjà disponibles sur l'écran d'accueil aujourd'hui
-  (démarrer la partie, changer le type de contrôle, la qualité graphique,
-  activer/désactiver le HUD, accéder aux crédits) continuent de déclencher
-  exactement le même comportement qu'avant ce changement. Seul l'habillage
-  visuel de cet écran évolue, pas sa logique.
-- Une fois l'écran d'accueil quitté (clic sur démarrer), le parcours du joueur
-  (écran d'aide aux contrôles, barre de chargement, course, écran de fin de
-  course/score, crédits) conserve son apparence actuelle : le changement
-  d'identité visuelle ne concerne que l'écran d'accueil.
-- L'écran rebrandé reste lisible, utilisable et sans chevauchement
-  d'éléments lors de la vérification prévue dans le cadre du TP — le
-  rebranding ne doit pas dégrader l'utilisabilité actuelle de cet écran.
+- Au chargement de la page, l'écran d'accueil montre : logo ACME, message d'accueil, sous-titre, bouton « DÉMARRER LA COURSE », puis les options du menu.
+- Le survol des éléments du menu reste perceptible ; les couleurs de survol proviennent de la palette ACME (et non plus de l'orange/bleu HexGL).
+- Le clic sur le bouton de démarrage déclenche exactement le même enchaînement qu'aujourd'hui (écran d'aide aux contrôles → chargement → course).
+- Le changement des options (contrôles, qualité, HUD), les paramètres d'URL et le retour au menu depuis la fin de course se comportent comme avant.
+- La course, le HUD en course, les contrôles, la physique, l'audio et l'écran de fin de course ne présentent aucune différence.
+- Le branding ne s'étend pas au-delà de l'écran d'accueil.
 
 ## 4. Contraintes
 
-Contraintes issues de la charte graphique (source de vérité pour l'identité
-visuelle) et du ticket :
+- **Identité (charte)** : logo sans déformation, avec une zone de respiration, sans couleur hors palette, sans ombre ni contour, jamais sur un fond qui le rend illisible.
+- **Sobriété** : pas d'effets complexes supplémentaires ; intégration simple et maintenable. Aucun nouvel effet d'animation n'est ajouté.
+- **Typographie** : sans-serif lisible ; aucune nouvelle dépendance webfont. La police existante (BebasNeue) est conservée tant qu'elle reste lisible et cohérente avec la charte.
+- **Lisibilité** : tout texte de l'écran d'accueil reste lisible sur son fond (contraste suffisant, blanc ou gris clair sur fond sombre).
+- **Technique** : projet legacy sans build ; pas de `package.json`, pas de nouveau framework (règles du projet). Les assets ACME sont servis en local, sans dépendance réseau supplémentaire.
+- **Responsive** : l'écran reste utilisable du bureau à l'écran mobile/tactile (le jeu supporte déjà le tactile).
+- **Tests** : les tests ne figent pas le branding (logo, couleurs, textes) ; ils n'utilisent pas WebGL.
 
-- **Logo** : utiliser le fichier fourni sans le déformer (ni étirement, ni
-  compression), sans lui ajouter d'ombre ou de contour, sans le recolorer.
-  Conserver une zone de respiration autour de lui. Le logo doit rester net,
-  lisible et suffisamment contrasté par rapport à son environnement
-  immédiat ; le choix de la solution permettant d'assurer ce contraste
-  (fond retenu, support éventuel, etc.) relève de la conception, pas de
-  cette spécification.
-- **Couleurs** : se limiter à la palette de la charte (noir profond, violet,
-  bleu électrique, cyan, blanc, gris clair, dégradé violet→bleu). Le fond
-  principal doit rester sombre — jamais un gris moyen dominant.
-- **Typographie** : ne pas introduire de nouvelle dépendance à une police web
-  uniquement pour ce rebranding. Conserver la typographie déjà en place dans
-  le jeu si elle reste lisible et cohérente avec l'esprit « titres en
-  sans-serif à graisse forte » recommandé par la charte.
-- **Sobriété** : la charte demande explicitement d'éviter les effets
-  additionnels complexes ; l'intégration visée est sobre et maintenable, pas
-  une refonte spectaculaire.
-- **Non-régression fonctionnelle** : le ticket est explicite — « le gameplay
-  doit rester inchangé ». Cela couvre le gameplay au sens large : contrôles,
-  HUD de course, physique, détection de collision, boucle de jeu.
-- **Message d'accueil** : le texte « Bienvenue au ACME Racing Challenge » est
-  une valeur de référence fournie par la charte, à afficher telle quelle.
+## 5. Décisions de conception déjà imposées
 
-## 5. Cas limites et gestion des erreurs
+| Sujet | Décision |
+|---|---|
+| Source de vérité | Le ticket `company-event.md` ; la charte et le logo contraignent le rendu |
+| Périmètre visuel | Écran d'accueil uniquement |
+| Message d'accueil | « Bienvenue au ACME Racing Challenge » (verbatim) |
+| Libellé du bouton | « DÉMARRER LA COURSE » |
+| Logo sur fond sombre | Le logo fourni (fond transparent, texte bleu nuit, pas de variante claire) est posé **tel quel sur un cartouche clair** (blanc `#FFFFFF` ou gris clair `#E6E8EE`) avec zone de respiration, au sein du fond principal sombre. Aucune recoloration |
+| Fond | Sombre, `#08090D` |
+| Palette | Noir profond `#08090D` (fond), violet `#7628FF` (accent marque), bleu électrique `#315BFF` (accent digital), cyan `#00C4E8` (accent secondaire), blanc `#FFFFFF` (texte), gris clair `#E6E8EE` (surfaces secondaires) |
+| Dégradé événementiel | `#7628FF → #315BFF` |
+| Titre « HexGL by BKcore » et fond `bg.jpg` | Retirés de l'accueil |
+| Langue du menu | Message et bouton en français ; Controls / Quality / HUD / Credits inchangés (anglais) |
+| Métadonnées de page | `<title>`, balises `og:*`/description, favicon : hors périmètre |
+| Crédits | Conservés |
 
-- **Petits écrans / orientation portrait** (mobile, bornes tactiles) : le
-  logo et le message d'accueil doivent rester lisibles et ne pas chevaucher
-  le menu de réglages existant (type de contrôle, qualité, HUD, godmode),
-  dans le cadre de la vérification prévue par le TP.
-- **Réglage « Godmode »** : ce réglage est aujourd'hui masqué par défaut dans
-  l'interface. Le rebranding ne doit ni le rendre visible ni changer sa
-  disponibilité ; si son habillage visuel est malgré tout affecté par la
-  nouvelle palette, son comportement fonctionnel doit rester identique.
-- **Contraste du logo** : un seul fichier logo est fourni (pas de variante
-  dédiée « fond sombre »). Si le fond retenu pour l'écran d'accueil ne
-  garantit pas nativement sa lisibilité et son contraste, une solution doit
-  être trouvée en conception ; cette spécification fixe uniquement
-  l'exigence de résultat (logo net, lisible, contrasté), pas la solution.
-- **Longueur du message d'accueil** : le texte de référence doit rester
-  entièrement lisible ; un retour à la ligne est acceptable sur un écran
-  étroit, une troncature silencieuse ne l'est pas.
+## 6. Cas limites et gestion des erreurs
 
-## 6. Hors périmètre
+- **Logo introuvable ou non chargé** : l'écran reste utilisable ; le nom « ACME » apparaît toujours via le message d'accueil, et le bouton de démarrage fonctionne.
+- **Tailles d'écran** : sur écran étroit (mobile portrait) ou très large, le logo n'est ni rogné ni étiré, et le menu n'est pas chevauché par le logo ou le message.
+- **Texte long** : le message d'accueil peut passer sur deux lignes sans masquer le bouton ni le menu.
+- **Appareils tactiles** : le démarrage se fait toujours au toucher.
+- **WebGL indisponible** : comportement actuel inchangé (le bouton renvoie vers la page d'aide WebGL) ; l'écran d'accueil ACME s'affiche quand même.
+- **Contraste** : aucun texte en gris moyen sur fond gris moyen ; le fond principal n'est jamais gris moyen dominant.
+- **Régression de gameplay** : toute différence en course (HUD, contrôles, rendu 3D) par rapport à la référence est un défaut.
 
-- Tout ce qui se passe après le clic sur le bouton de démarrage : écran
-  d'aide aux contrôles, barre de chargement, déroulé de la course, HUD de
-  course, écran de fin de course/score, partage sur les réseaux sociaux,
-  classement.
-- Le contenu de l'écran de crédits (attribution des auteurs, technologies,
-  licences graphiques) : non modifié par ce ticket.
-- Les métadonnées techniques de la page (titre d'onglet du navigateur,
-  balises Open Graph, favicon, suivi Google Analytics) : ni le ticket ni la
-  charte ne les mentionnent.
-- Restent également inchangés et hors périmètre, faute d'être demandés par
-  le ticket ou la charte : l'écran de repli affiché si WebGL n'est pas
-  supporté, l'animation existante du fond de l'écran d'accueil (le titre/logo
-  HexGL étant supprimé de cet écran, cf. §2, il n'y a pas lieu de conserver
-  son animation), le sous-texte illustratif de la maquette (« Une expérience
-  événementielle aux couleurs de la marque. »), et le mécanisme existant de
-  pré-remplissage des réglages via paramètres d'URL.
-- La correction des bugs et dettes techniques recensés dans
-  `docs/architecture.md` : hors périmètre, sauf si l'un d'eux empêche
-  directement de réaliser ce ticket.
-- Le libellé fonctionnel des options du menu (type de contrôle, qualité, HUD,
-  godmode) : seul leur habillage visuel est concerné, pas leur texte.
-- Le libellé du bouton de démarrage (« Start ») : le ticket ne demande
-  explicitement que le logo, les couleurs, le nom de l'entreprise et le
-  message d'accueil. La maquette de la charte illustre un bouton intitulé
-  « DÉMARRER LA COURSE », mais ce libellé n'est pas repris dans la liste des
-  éléments à adapter ; le texte du bouton reste inchangé, seul son habillage
-  (couleur) suit la palette ACME.
-- Toute déclinaison de l'identité ACME au-delà de l'écran d'accueil (piste,
-  autres modes de jeu, fichiers de packaging `manifest.webapp`/
-  `cache.appcache`).
+## 7. Hors périmètre
 
-## 7. Critères d'acceptation
+- Gameplay, physique, circuit, vaisseau, HUD en course, contrôles, audio.
+- Écrans d'aide aux contrôles (`step-2`), de chargement (`step-3`), de fin de course (`step-5`) et contenu de la page Credits (seul l'accès est conservé).
+- Métadonnées de page, favicon, icônes d'application, manifest, cache applicatif, Google Analytics.
+- Traduction du reste du menu et de l'interface.
+- Création d'une variante claire du logo, ou modification du fichier logo.
+- Correction des anomalies listées dans `docs/architecture.md` §6.
+- Nouveau framework, build ou dépendance de test.
 
-- En ouvrant le jeu, avant toute interaction, le joueur voit le logo ACME
-  affiché intégralement, sans déformation ni recoloration, net et bien
-  contrasté par rapport à son environnement immédiat, avec un espace de
-  respiration visible autour de lui.
-- Le message « Bienvenue au ACME Racing Challenge » est visible et lisible
-  sur l'écran d'accueil.
-- Le fond de l'écran d'accueil est sombre, et les éléments visuels mis en
-  avant (titre, bouton de démarrage, éléments de surbrillance) n'utilisent
-  que des couleurs de la palette ACME (violet, bleu électrique, cyan, blanc,
-  gris clair, noir profond, ou le dégradé violet→bleu).
-- L'ancien titre/logo HexGL n'est plus affiché sur l'écran d'accueil :
-  l'identité visuelle qui y est visible est celle d'ACME (logo, couleurs,
-  message). Les écrans de crédits et leurs attributions restent inchangés.
-- Chaque action du menu d'accueil (démarrer, changer le type de contrôle, la
-  qualité, le HUD, accéder aux crédits) produit exactement le même effet
-  qu'avant le changement.
-- Aucune différence n'est constatée dans le déroulé de la course : contrôles,
-  physique du vaisseau, HUD de course, fin de course, écran de score.
-- Aucune nouvelle police web n'a été ajoutée pour les besoins de cet écran.
-- L'écran d'accueil rebrandé reste lisible, utilisable et sans
-  chevauchement d'éléments lors de la vérification prévue dans le cadre du
-  TP.
+## 8. Critères d'acceptation
+
+| # | Critère | Validation |
+|---|---|---|
+| CA1 | Le logo ACME est visible sur l'écran d'accueil, ratio conservé, sans ombre ni contour, lisible (sur cartouche clair) | Visuelle, comparaison à `formation/tests/captures/01-ecran-accueil.png` (avant) et à la charte |
+| CA2 | Le texte « Bienvenue au ACME Racing Challenge » est affiché exactement | Visuelle ; texte du DOM |
+| CA3 | Le bouton affiche « DÉMARRER LA COURSE » et lance le jeu comme avant | Manuelle : clic → aide → chargement → course |
+| CA4 | Les couleurs de l'accueil sont uniquement celles de la palette ACME ; le fond est sombre | Visuelle ; inspection des couleurs |
+| CA5 | Plus aucune mention ni visuel « HexGL by BKcore » sur l'accueil ; Credits reste accessible | Visuelle |
+| CA6 | Controls, Quality, HUD, Credits fonctionnent (cycle des valeurs, ouverture/fermeture des crédits) | Manuelle |
+| CA7 | Rendu correct sur grande largeur et sur largeur mobile (logo non déformé ni rogné, pas de chevauchement) | Visuelle à plusieurs tailles |
+| CA8 | Course, HUD en course et écran de fin identiques à la référence (`formation/tests/captures/02-jeu-en-cours.png`) | Comparaison visuelle ; partie complète |
+| CA9 | La suite QUnit existante passe (code retour `0`) ; aucun test n'impose le branding | `formation\tests\ci-chrome.bat` |
+| CA10 | Aucune nouvelle dépendance (webfont, framework, `package.json`) ni requête réseau ajoutée | Revue du diff et de l'onglet réseau |

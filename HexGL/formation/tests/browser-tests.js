@@ -5,7 +5,7 @@
     document.documentElement.dataset.testStatus = "fail";
     document.documentElement.dataset.testCount = "0";
     document.documentElement.dataset.testFailures = "1";
-    document.body.insertAdjacentHTML("afterbegin", "<p style='color:red'>QUnit introuvable : lancer INSTALLER-QUNIT.cmd</p>");
+    document.body.insertAdjacentHTML("afterbegin", "<p style='color:red'>QUnit introuvable : vérifiez le fichier vendor/qunit-2.26.0.js</p>");
     return;
   }
 

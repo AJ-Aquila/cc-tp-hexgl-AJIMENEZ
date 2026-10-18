@@ -7,11 +7,11 @@ Explore ce projet legacy sans modifier aucun fichier.
 
 Génère directement `docs/architecture.md` avec :
 
-- stack et points d’entrée ;
-- flux principal de lancement ;
-- principaux modules, fichiers et assets ;
-- dépendances et zones legacy à risque ;
-- fonctions/modules testables avec Node sans navigateur ;
+- stack et points d’entrée
+- flux principal de lancement
+- principaux modules, fichiers et assets
+- dépendances et zones legacy à risque
+- fonctions/modules testables automatiquement, notamment avec les tests QUnit disponibles dans formation/tests/
 - bugs, dettes ou anomalies remarquables.
 
 Le document doit décrire uniquement l’état actuel du projet.
@@ -26,24 +26,26 @@ Cf. /A2-explorer pour un exemple de architecture.md
 ## A3 - Figer les comportements à préserver
 
 ```text
-À partir de ton analyse du projet, identifie les comportements existants
-qu’il est pertinent de protéger avant le refactoring.
+En t'appuyant sur docs/architecture.md, commence par lancer le jeu et réaliser deux captures de référence : l'écran d'accueil et le jeu en cours. Enregistre-les dans formation/tests/captures/. Si les captures automatiques sont impossibles, signale-le sans bloquer la suite.
 
-Crée uniquement les tests utiles et simples à exécuter sans navigateur.
+Ensuite, identifie quelques comportements existants à protéger avant le refactoring. Une suite de tests QUnit existe déjà dans formation/tests/ : examine-la et complète-la avec quelques tests de non-régression pertinents.
 
 Contraintes :
-- utiliser uniquement les outils natifs de Node
-  (`node:test`, `node:assert`, `node:fs` si nécessaire)
-- privilégier les fonctions pures et les checks simples de non-régression
-- ajouter un `package.json` minimal avec une commande `npm test`
-- ne pas modifier le code fonctionnel
-- ne pas figer le logo, les couleurs, les textes ou autres éléments
-  de branding qui seront volontairement modifiés plus tard.
+- Conserver et enrichir `formation/tests/browser-tests.js`, sans créer de nouveau framework de tests.
+- Privilégier les fonctions simples à tester automatiquement (Utils, Timer…), sans lancer le jeu ni dépendre du rendu WebGL.
+- Charger les scripts supplémentaires nécessaires dans `formation/tests/index.html`.
+- Ne pas modifier le code fonctionnel.
+- Ne pas ajouter de dépendances, de `package.json` ni de commande `npm test`.
+- Ne pas figer le logo, les couleurs, les textes ou les éléments de branding qui seront volontairement modifiés plus tard.
 
-À la fin, exécute `npm test` et explique brièvement ce que chaque test protège.
+À la fin :
+1. Exécute les tests avec `formation/tests/ci-chrome.bat` sous Windows ou `ci-chrome.sh` sous Linux.
+2. Indique clairement les tests réussis, échoués ou impossibles à exécuter.
+3. Documente la commande de test et l’emplacement des éventuelles captures dans `CLAUDE.md` pour future réutilisation
+4. Explique brièvement ce que chaque nouveau test protège.
 ```
 
-Cf. /A3-figer-les-comportements pour un exemple des tests et de captures
+Cf. /A3-figer-les-comportements pour un exemple des nouveaux tests et des captures, ainsi que le claude.md
 
 ## B1 - Créer une branche dédiée
 
@@ -82,7 +84,7 @@ Une fois les points nécessaires clarifiés, génère : work/company-event/spec.
 - Hors périmètre
 - Critères d’acceptation
 
-La spécification décrit ce que l’on veut obtenir et pourquoi.
+La spécification décrit ce que l’on veut obtenir, pourquoi et comment le valider, sans détailler les choix d’implémentation.
 
 Ne modifie aucun code.
 ```
@@ -102,18 +104,19 @@ Cf. /B2-B3-spec pour une exemple de specification fonctionnelle
 
 ## B4 et B5 - plan
 
+En mode plan :
 ```text
-/plan À partir de @work/company-event/spec.md et de @docs/architecture.md,
-propose l’approche technique minimale pour implémenter le changement
-dans cette codebase legacy.
+À partir de @work/company-event/spec.md et de @docs/architecture.md, propose l’approche technique minimale pour implémenter le changement dans cette codebase legacy.
 
 Contraintes :
-- préserver le gameplay et le fonctionnement actuel ;
-- ne pas changer de framework ni moderniser Three.js / CoffeeScript ;
-- centraliser le branding dans un seul point de configuration ;
-- Node sert uniquement au tooling et aux tests ;
-- pas de backend ni d’upload dynamique ;
-- préférer de petits changements réversibles.
+- pour lancer le jeu, privilégier une commande compatible avec l'environnement disponible (Python 3, PHP, etc.), sans supposer la présence de Node.js.
+- prévoir des vérifications après chaque étape, mais aucun commit pendant l'implémentation : le commit sera réalisé après la validation finale
+- préserver le gameplay et le fonctionnement actuel
+- ne pas changer de framework ni moderniser Three.js / CoffeeScript
+- centraliser le branding dans un seul point de configuration
+- Ne pas introduire Node.js, de build ni de nouvelles dépendances. Réutiliser les tests QUnit existants et leur commande d'exécution documentée dans CLAUDE.md
+- pas de backend ni d’upload dynamique
+- préférer de petits changements réversibles
 
 Structure le plan avec :
 - objectif
@@ -150,14 +153,16 @@ Cf. /B6-build pour les captures d'écran de chaque étape
 Implémente uniquement l’étape 1 du plan d’implémentation de @work/company-event/plan.md.
 Respecte exactement le plan validé et les contraintes propres à cette étape.
 Règles :
-- n’anticipe pas les étapes suivantes
-- ne modifie rien hors du périmètre prévu
-- si l’implémentation nécessite de s’écarter du plan validé, arrête-toi et explique l’écart avant de poursuivre
-- ne touche pas au gameplay ni au JavaScript / CoffeeScript sauf si le plan l’exige explicitement
-- lance `npm test` après les modifications
-- si un test échoue, corrige la cause sans supprimer ni affaiblir le test
-- arrête-toi après cette étape
-- résume les fichiers modifiés, les changements effectués et le résultat des tests
+- N’anticipe pas les étapes suivantes.
+- Ne modifie rien hors du périmètre prévu.
+- Si l’implémentation nécessite de s’écarter du plan validé, arrête-toi et explique l’écart avant de poursuivre.
+- Ne touche pas au gameplay ni au code existant hors du périmètre prévu.
+- Relance les tests avec la commande documentée dans `CLAUDE.md`.
+- Si un test échoue, corrige la cause sans supprimer ni affaiblir le test.
+- Si l'étape modifie le rendu ou les interactions, vérifie-les dans le navigateur si les outils disponibles le permettent. Sinon, indique les contrôles manuels à effectuer, en t'appuyant sur les captures de référence.
+- N’effectue aucun commit.
+- Arrête-toi après cette étape.
+- Résume les fichiers modifiés, les changements effectués et les résultats des vérifications.
 Ne commence pas l’étape suivante.
 ```
 
@@ -166,40 +171,42 @@ Ne commence pas l’étape suivante.
 ```text
 L’étape précédente est validée.
 
-Implémente uniquement l’étape suivante
-du plan d’implémentation de @work/company-event/plan.md.
+Implémente uniquement l’étape suivante du plan d’implémentation de @work/company-event/plan.md.
 
 Respecte exactement le plan validé et les contraintes propres à cette étape.
 
 Règles :
-- n’anticipe pas les étapes suivantes
-- ne modifie rien hors du périmètre prévu
-- si l’implémentation nécessite de s’écarter du plan validé, arrête-toi et explique l’écart avant de poursuivre
-- ne touche pas au gameplay ni au JavaScript / CoffeeScript sauf si le plan l’exige explicitement
-- lance `npm test` après les modifications
-- si un test échoue, corrige la cause sans supprimer ni affaiblir le test
-- arrête-toi après cette étape
-- résume les fichiers modifiés, les changements effectués et le résultat des tests
+- N’anticipe pas les étapes suivantes.
+- Ne modifie rien hors du périmètre prévu.
+- Si l’implémentation nécessite de s’écarter du plan validé, arrête-toi et explique l’écart avant de poursuivre.
+- Ne touche pas au gameplay ni au code existant hors du périmètre prévu.
+- Relance les tests avec la commande documentée dans `CLAUDE.md`.
+- Si un test échoue, corrige la cause sans supprimer ni affaiblir le test.
+- Si l’étape modifie le rendu ou les interactions, vérifie-les dans le navigateur si les outils disponibles le permettent. Sinon, indique les contrôles manuels à effectuer, en t’appuyant sur les captures de référence.
+- N’effectue aucun commit.
+- Arrête-toi après cette étape.
+- Résume les fichiers modifiés, les changements effectués et les résultats des vérifications.
 
-Ne commence pas l’étape suivante ni ne fait aucun commit.
+Ne commence pas l’étape suivante.
 ```
 
 ## B7 - Vérification finale
 
 ```text
-/simplify Concentre-toi uniquement sur les fichiers modifiés pour ce changement. Simplifie seulement si cela améliore réellement la qualité ou réduit la duplication. Ne change aucun comportement, n'élargis pas le périmètre, ne modernise pas la codebase et ne touche pas au gameplay ni au JavaScript / CoffeeScript. Si aucune simplification utile n'est nécessaire, ne modifie rien.
+/simplify Concentre-toi uniquement sur les fichiers modifiés pour ce changement. Simplifie seulement si cela améliore réellement la qualité ou réduit la duplication. Ne change aucun comportement, n'élargis pas le périmètre, ne modernise pas la codebase et ne touche pas au gameplay ni au code existant hors du périmètre prévu. Si aucune simplification utile n'est nécessaire, ne modifie rien.
 ```
 
 puis :
 
 ```text
-Vérifie l’implémentation par rapport aux critères d’acceptation de @work/company-event/spec.md.
+Vérifie l'implémentation par rapport aux critères d'acceptation de @work/company-event/spec.md.
+Relance les tests documentés dans `CLAUDE.md`. Vérifie également le rendu et les interactions dans le navigateur si les outils disponibles le permettent, en utilisant les captures de référence. Sinon, précise les contrôles manuels restant à effectuer.
 Pour chaque critère, indique :
-- PASS, FAIL ou INCONCLUSIVE
-- la preuve observée : test, fichier, diff ou comportement visible 
-- si FAIL, la cause probable
-Vérifie également qu’aucun changement hors périmètre n’a été introduit.
-Ne modifie rien pendant cette vérification.
+- PASS, FAIL ou INCONCLUSIVE ;
+- la preuve réellement obtenue : test, fichier, diff ou comportement observé ;
+- si FAIL, la cause probable.
+Vérifie également qu'aucun changement hors périmètre n'a été introduit.
+Ne modifie rien pendant cette vérification et n'effectue aucun commit.
 ```
 
 ## B8 - Capitaliser et documenter
@@ -210,7 +217,6 @@ Analyse @work/company-event/spec.md, @work/company-event/plan.md et le diff actu
 Identifie les informations durables qui doivent être répercutées dans docs/architecture.md : changements d’architecture, nouvelles commandes, contraintes, pièges importants et décisions techniques durables.
 Propose uniquement les mises à jour nécessaires.
 Ne supprime ni spec.md ni plan.md.
-
 ```
 
 puis :
@@ -218,7 +224,7 @@ puis :
 ```text
 Applique les mises à jour validées à @docs/architecture.md.
 Supprime uniquement les fichiers temporaires devenus inutiles.
-Conserve work/company-event/spec.md et work/company-event/plan.md
+Conserve work/company-event/spec.md et work/company-event/plan.md, les tests QUnit, CLAUDE.md et les captures de référence dans formation/tests/captures/.
 ```
 
 Cf. /B8-capitaliser-et-documenter pour la doc mise à jour.
@@ -226,10 +232,11 @@ Cf. /B8-capitaliser-et-documenter pour la doc mise à jour.
 ## B9 - Commit
 
 ```text
-Analyse le diff actuel, y compris spec.md, plan.md, code, tests et documentation.
-Si tu détectes un changement inattendu ou hors périmètre, arrête-toi.
-Sinon, propose un message adapté puis crée le commit local.
-Ne push rien.
+Analyse les changements Git actuels, y compris la spécification, le plan, le code, les tests et la documentation.
+Vérifie que les fichiers concernés appartiennent uniquement au périmètre de ce TP, dans `HexGL/`. Ne prends pas en compte les autres dossiers du dépôt, notamment `etapes/`.
+Si tu détectes un changement inattendu ou hors périmètre, arrête-toi et signale-le.
+Sinon, propose un message adapté, ajoute uniquement les fichiers validés et crée le commit local.
+Ne fais aucun push.
 ```
 
 ## B10 - Automatisations Git
